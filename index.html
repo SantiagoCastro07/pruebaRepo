@@ -3,15 +3,448 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyecto de prueba</title>
+  <title>Parque de perritos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E">
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 60px; background: #f4f6f8; color: #333; }
-    img { width: 300px; border-radius: 12px; margin-top: 20px; }
+    :root {
+      --ink: #2f3b2f;
+      --card: #ffffff;
+      --accent: #ff8a3d;
+      --accent-dark: #e06c1f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px;
+      font-family: "Segoe UI", Arial, sans-serif; color: var(--ink);
+      background: linear-gradient(#bfe6ff, #eaf8ff 45%, #f4f6f8);
+      display: flex; flex-direction: column; align-items: center;
+      user-select: none; -webkit-user-select: none;
+    }
+    h1 { margin: 0 0 4px; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+    .sub { margin: 0 0 16px; opacity: .75; text-align: center; }
+
+    .panel {
+      width: 100%; max-width: 940px; background: var(--card); border-radius: 16px;
+      padding: 12px 14px; margin-bottom: 14px; display: flex; flex-wrap: wrap;
+      gap: 10px; align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+    }
+    .panel .label { font-weight: 700; margin-right: 4px; }
+    button {
+      font: inherit; cursor: pointer; border: 2px solid transparent; border-radius: 999px;
+      padding: 8px 16px; background: #eef2ee; color: var(--ink);
+      transition: transform .12s, background .2s, box-shadow .2s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+    button:active { transform: scale(.95); }
+    button:focus-visible { outline: 3px solid #4a90e2; outline-offset: 2px; }
+    button.food[aria-pressed="true"] { background: #fff1e4; border-color: var(--accent); }
+    button.main { background: var(--accent); color: #fff; font-weight: 700; }
+    button.main:hover { background: var(--accent-dark); }
+
+    #yard {
+      position: relative; width: 100%; max-width: 940px; height: 480px; overflow: hidden;
+      border-radius: 20px; cursor: crosshair; box-shadow: 0 10px 30px rgba(0,0,0,.18);
+      background:
+        radial-gradient(circle at 85% 18%, #fff7b0 0 34px, rgba(255,247,176,.35) 35px 60px, transparent 61px),
+        linear-gradient(#a6dcff 0 32%, #7ccf5b 32% 100%);
+    }
+    #yard::before { /* colinas */
+      content: ""; position: absolute; left: -10%; right: -10%; top: 22%; height: 22%;
+      background: radial-gradient(ellipse at 30% 100%, #6cc04a 0 60%, transparent 61%),
+                  radial-gradient(ellipse at 75% 100%, #5fb43f 0 55%, transparent 56%);
+    }
+    .cloud {
+      position: absolute; width: 90px; height: 28px; background: #fff; border-radius: 30px; opacity: .9;
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+    .cloud::before { width: 38px; height: 38px; top: -18px; left: 14px; }
+    .cloud::after { width: 28px; height: 28px; top: -12px; left: 46px; }
+    @keyframes drift { from { transform: translateX(-140px); } to { transform: translateX(1100px); } }
+    .fence {
+      position: absolute; left: 0; right: 0; top: 27%; height: 46px; pointer-events: none;
+      background:
+        repeating-linear-gradient(90deg, #c98d55 0 12px, transparent 12px 34px),
+        linear-gradient(transparent 12px, #b87a45 12px 20px, transparent 20px 32px, #b87a45 32px 40px, transparent 40px);
+      opacity: .95;
+    }
+    .flower { position: absolute; font-size: 18px; pointer-events: none; }
+
+    .dog { position: absolute; left: 0; top: 0; width: 130px; height: 100px; transform-origin: 65px 92px; cursor: pointer; will-change: transform; }
+    .dog .flip { width: 100%; height: 100%; transition: transform .2s; }
+    .dog svg { width: 100%; height: 100%; overflow: visible; display: block; }
+    .dog .tag {
+      position: absolute; left: 50%; top: -34px; transform: translateX(-50%); text-align: center;
+      font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none;
+    }
+    .dog .bar { width: 54px; height: 6px; border-radius: 4px; background: rgba(0,0,0,.25); margin: 2px auto 0; overflow: hidden; }
+    .dog .bar i { display: block; height: 100%; width: 50%; background: #5bd05b; transition: width .4s, background .4s; }
+    .dog .bubble {
+      position: absolute; left: 50%; top: -62px; transform: translateX(-50%) scale(0);
+      background: #fff; border-radius: 12px; padding: 2px 8px; font-size: 13px; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2); transition: transform .2s; pointer-events: none;
+    }
+    .dog .bubble.show { transform: translateX(-50%) scale(1); }
+
+    /* animaciones del perro */
+    .tail { transform-origin: 30px 50px; animation: wag 1.1s ease-in-out infinite; }
+    .leg { transform-origin: var(--ox) 64px; }
+    .walking .leg.a { animation: step .38s ease-in-out infinite; }
+    .walking .leg.b { animation: step .38s ease-in-out infinite reverse; }
+    .walking .bobber { animation: bob .38s ease-in-out infinite; }
+    .walking .tail, .happy .tail { animation-duration: .3s; }
+    .head { transform-origin: 84px 52px; }
+    .eating .head { animation: chomp .28s ease-in-out infinite; }
+    .eating .tail { animation-duration: .25s; }
+    .tongue { opacity: 0; transition: opacity .2s; }
+    .happy .tongue, .eating .tongue { opacity: 1; }
+    .jump .bobber { animation: jump .55s ease-out; }
+    .sleepy .head { transform: rotate(10deg); }
+    @keyframes wag { 0%,100% { transform: rotate(-14deg); } 50% { transform: rotate(22deg); } }
+    @keyframes step { 0%,100% { transform: rotate(-24deg); } 50% { transform: rotate(24deg); } }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes chomp { 0%,100% { transform: rotate(16deg); } 50% { transform: rotate(30deg); } }
+    @keyframes jump { 0% { transform: translateY(0); } 40% { transform: translateY(-26px) rotate(-4deg); } 100% { transform: translateY(0); } }
+
+    .food {
+      position: absolute; font-size: 30px; transform: translate(-50%, -100%);
+      pointer-events: none; animation: fall .6s cubic-bezier(.3,.9,.4,1.2) both;
+      filter: drop-shadow(0 4px 2px rgba(0,0,0,.25));
+    }
+    .food.gone { animation: pop .3s ease-in forwards; }
+    @keyframes fall { from { margin-top: -220px; opacity: 0; transform: translate(-50%, -100%) rotate(-120deg); } to { margin-top: 0; opacity: 1; transform: translate(-50%, -100%) rotate(0); } }
+    @keyframes pop { to { transform: translate(-50%, -140%) scale(0); opacity: 0; } }
+    .fx { position: absolute; pointer-events: none; font-size: 22px; animation: floatUp 1.1s ease-out forwards; z-index: 9999; }
+    @keyframes floatUp { from { transform: translate(-50%, 0) scale(.5); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), -70px) scale(1.2); opacity: 0; } }
+    #toast {
+      position: absolute; left: 50%; top: 12px; transform: translate(-50%, -80px);
+      background: rgba(0,0,0,.72); color: #fff; padding: 8px 16px; border-radius: 999px;
+      transition: transform .3s; pointer-events: none; z-index: 10000; font-size: 14px;
+    }
+    #toast.show { transform: translate(-50%, 0); }
+    .hint { margin-top: 12px; font-size: .9rem; opacity: .7; text-align: center; }
+    @media (max-width: 560px) { #yard { height: 400px; } }
+    @media (prefers-reduced-motion: reduce) { .cloud { animation: none; } }
   </style>
 </head>
 <body>
-  <h1>¡Hola! 👋</h1>
-  <p>Este es un proyecto de prueba para practicar la subida de repositorios.</p>
-  <img src="https://s1.abcstatics.com/media/familia/2019/07/22/golden-khtC--1248x698@abc.jpg" alt="Imagen de prueba">
+  <h1>🐾 Parque de perritos</h1>
+  <p class="sub">Elige una comida, toca el parque para soltarla y mira cómo corren a comer.</p>
+
+  <div class="panel" role="group" aria-label="Controles">
+    <span class="label">Comida:</span>
+    <button class="food" data-food="🦴" data-value="30" aria-pressed="true">🦴 Hueso</button>
+    <button class="food" data-food="🍖" data-value="45" aria-pressed="false">🍖 Carne</button>
+    <button class="food" data-food="🍪" data-value="20" aria-pressed="false">🍪 Galleta</button>
+    <button class="main" id="rain">🌧️ Lluvia de comida</button>
+    <button class="main" id="add">➕ Más perros</button>
+  </div>
+
+  <div id="yard" aria-label="Parque con perros">
+    <div class="cloud" style="top:20px; animation-duration:60s; animation-delay:-10s"></div>
+    <div class="cloud" style="top:60px; animation-duration:85s; animation-delay:-45s; transform:scale(.7)"></div>
+    <div class="fence"></div>
+    <div id="toast" role="status"></div>
+  </div>
+  <p class="hint">Toca a un perro para acariciarlo · Cuando su barra está llena, ya no quiere comer 🐶</p>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var yard = document.getElementById('yard');
+      var toastEl = document.getElementById('toast');
+      var foodBtns = document.querySelectorAll('button.food');
+      var currentFood = { emoji: '🦴', value: 30 };
+
+      var PALETTE = [
+        { name: 'Toby',  body: '#e0a458', dark: '#a86a2c', light: '#f7dcae', spot: null },
+        { name: 'Luna',  body: '#f2f2f2', dark: '#8a8f99', light: '#ffffff', spot: '#c9ced6' },
+        { name: 'Max',   body: '#5b4636', dark: '#33261b', light: '#c9a37e', spot: null },
+        { name: 'Coco',  body: '#c98b5a', dark: '#7a4a25', light: '#f1d3b3', spot: '#7a4a25' },
+        { name: 'Rocky', body: '#8d949e', dark: '#4d535c', light: '#dfe3e8', spot: null },
+        { name: 'Bella', body: '#f5d58a', dark: '#c89a3e', light: '#fff2cf', spot: null },
+        { name: 'Thor',  body: '#2f2f35', dark: '#141418', light: '#b78a5c', spot: null },
+        { name: 'Nala',  body: '#d9b48f', dark: '#9a6b43', light: '#fbead6', spot: '#fff' },
+        { name: 'Simba', body: '#e58b3a', dark: '#a3541a', light: '#ffd9ae', spot: null },
+        { name: 'Kira',  body: '#ffffff', dark: '#333',    light: '#ffffff', spot: '#2f2f35' }
+      ];
+
+      var dogs = [];
+      var foods = [];
+      var nextPalette = 0;
+
+      function rand(a, b) { return a + Math.random() * (b - a); }
+      function bounds() {
+        var w = yard.clientWidth, h = yard.clientHeight;
+        return { minX: 70, maxX: w - 70, minY: h * 0.42, maxY: h - 14 };
+      }
+      function scaleAt(y) { var b = bounds(); return 0.62 + 0.5 * ((y - b.minY) / (b.maxY - b.minY || 1)); }
+
+      var toastTimer = null;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+      }
+
+      function fx(x, y, symbol, count) {
+        for (var i = 0; i < count; i++) {
+          var el = document.createElement('div');
+          el.className = 'fx';
+          el.textContent = symbol;
+          el.style.left = x + 'px';
+          el.style.top = y + 'px';
+          el.style.setProperty('--dx', rand(-40, 40) + 'px');
+          el.style.animationDelay = (i * 0.08) + 's';
+          yard.appendChild(el);
+          (function (node) { setTimeout(function () { node.remove(); }, 1500); })(el);
+        }
+      }
+
+      function dogSVG(c) {
+        var spot = c.spot ? '<ellipse cx="52" cy="50" rx="11" ry="8" fill="' + c.spot + '"/>' : '';
+        return '' +
+          '<svg viewBox="0 0 135 100" aria-hidden="true" focusable="false">' +
+            '<ellipse cx="62" cy="92" rx="40" ry="6" fill="rgba(0,0,0,.2)"/>' +
+            '<g class="bobber">' +
+              '<g class="tail"><path d="M32 52 Q8 44 12 22 Q22 36 38 44Z" fill="' + c.body + '" stroke="' + c.dark + '" stroke-width="1.5"/></g>' +
+              '<g class="leg a" style="--ox:33px"><rect x="28" y="64" width="11" height="27" rx="5" fill="' + c.dark + '"/></g>' +
+              '<g class="leg b" style="--ox:75px"><rect x="70" y="64" width="11" height="27" rx="5" fill="' + c.dark + '"/></g>' +
+              '<ellipse cx="58" cy="58" rx="34" ry="21" fill="' + c.body + '"/>' +
+              '<ellipse cx="60" cy="69" rx="20" ry="8" fill="' + c.light + '"/>' + spot +
+              '<g class="leg b" style="--ox:44px"><rect x="39" y="64" width="11" height="27" rx="5" fill="' + c.body + '"/></g>' +
+              '<g class="leg a" style="--ox:86px"><rect x="81" y="64" width="11" height="27" rx="5" fill="' + c.body + '"/></g>' +
+              '<g class="head">' +
+                '<circle cx="96" cy="42" r="19" fill="' + c.body + '"/>' +
+                '<ellipse cx="113" cy="50" rx="12" ry="9" fill="' + c.light + '"/>' +
+                '<circle cx="122" cy="46" r="3.8" fill="#222"/>' +
+                '<circle cx="101" cy="37" r="3.2" fill="#222"/><circle cx="102" cy="36" r="1" fill="#fff"/>' +
+                '<path d="M106 55 Q113 59 120 54" stroke="#222" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+                '<ellipse class="tongue" cx="113" cy="60" rx="3.6" ry="5" fill="#ff7b9c"/>' +
+                '<path d="M86 28 Q68 32 73 58 Q88 56 94 38Z" fill="' + c.dark + '"/>' +
+              '</g>' +
+            '</g>' +
+          '</svg>';
+      }
+
+      function addDog() {
+        var p = PALETTE[nextPalette % PALETTE.length];
+        var lap = Math.floor(nextPalette / PALETTE.length);
+        nextPalette++;
+        var b = bounds();
+        var el = document.createElement('div');
+        el.className = 'dog';
+        el.setAttribute('role', 'img');
+        el.setAttribute('aria-label', 'Perro ' + p.name);
+        el.innerHTML =
+          '<div class="tag">' + p.name + (lap ? ' ' + (lap + 1) : '') + '<div class="bar"><i></i></div></div>' +
+          '<div class="bubble"></div>' +
+          '<div class="flip">' + dogSVG(p) + '</div>';
+        yard.appendChild(el);
+
+        var d = {
+          el: el, flip: el.querySelector('.flip'), bar: el.querySelector('.bar i'), bubble: el.querySelector('.bubble'),
+          x: rand(b.minX, b.maxX), y: rand(b.minY, b.maxY),
+          tx: 0, ty: 0, dir: Math.random() < 0.5 ? 1 : -1,
+          speed: rand(70, 110), full: rand(25, 65), state: 'idle', timer: rand(0.3, 2),
+          food: null, bubbleTimer: null, lastDir: 0
+        };
+        d.tx = d.x; d.ty = d.y;
+        el.addEventListener('click', function (e) { e.stopPropagation(); pet(d); });
+        dogs.push(d);
+        fx(d.x, d.y - 60, '✨', 3);
+        return d;
+      }
+
+      function say(d, text, ms) {
+        d.bubble.textContent = text;
+        d.bubble.classList.add('show');
+        clearTimeout(d.bubbleTimer);
+        d.bubbleTimer = setTimeout(function () { d.bubble.classList.remove('show'); }, ms || 1400);
+      }
+
+      function bump(d, cls, ms) {
+        d.el.classList.add(cls);
+        setTimeout(function () { d.el.classList.remove(cls); }, ms);
+      }
+
+      function pet(d) {
+        var s = scaleAt(d.y);
+        fx(d.x, d.y - 100 * s, '💖', 3);
+        say(d, ['¡Guau!', '¡Más mimos!', '¡Me encanta!', '🐶 ¡Wuf!'][Math.floor(Math.random() * 4)]);
+        bump(d, 'jump', 560);
+        bump(d, 'happy', 1500);
+      }
+
+      function dropFood(x, y) {
+        var b = bounds();
+        if (foods.length >= 14) { toast('¡Ya hay mucha comida en el parque!'); return; }
+        x = Math.max(b.minX, Math.min(b.maxX, x));
+        y = Math.max(b.minY, Math.min(b.maxY, y));
+        var el = document.createElement('div');
+        el.className = 'food';
+        el.textContent = currentFood.emoji;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.zIndex = Math.round(y);
+        yard.appendChild(el);
+        foods.push({ el: el, x: x, y: y, value: currentFood.value, claimed: false, born: performance.now() });
+        if (dogs.every(function (d) { return d.full > 90; })) toast('Todos están llenos, la comida esperará 😋');
+      }
+
+      function assignFood() {
+        var now = performance.now();
+        foods.forEach(function (f) {
+          if (f.claimed || now - f.born < 500) return;
+          var best = null, bd = Infinity;
+          dogs.forEach(function (d) {
+            if (d.food || d.state === 'eat' || d.full > 90) return;
+            var dist = Math.hypot(d.x - f.x, d.y - f.y);
+            if (dist < bd) { bd = dist; best = d; }
+          });
+          if (best) {
+            f.claimed = true;
+            best.food = f;
+            best.state = 'run';
+            best.speed = rand(150, 190);
+            var s = scaleAt(f.y);
+            var side = best.x < f.x ? -1 : 1;
+            best.tx = f.x + side * 52 * s;
+            best.ty = f.y;
+            best.dir = -side;
+            say(best, '¡Comida! 🤤', 1000);
+          }
+        });
+      }
+
+      function finishEating(d) {
+        var f = d.food;
+        d.food = null;
+        d.state = 'idle';
+        d.speed = rand(70, 110);
+        d.timer = rand(1, 2.5);
+        d.el.classList.remove('eating');
+        if (f) {
+          f.el.classList.add('gone');
+          setTimeout(function () { f.el.remove(); }, 320);
+          foods.splice(foods.indexOf(f), 1);
+          d.full = Math.min(100, d.full + f.value);
+        }
+        var s = scaleAt(d.y);
+        fx(d.x, d.y - 100 * s, '❤️', 3);
+        bump(d, 'jump', 560);
+        bump(d, 'happy', 1600);
+        say(d, d.full > 90 ? '¡Estoy lleno! 😌' : '¡Delicioso!', 1600);
+      }
+
+      var last = performance.now();
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        var b = bounds();
+        assignFood();
+
+        dogs.forEach(function (d) {
+          d.full = Math.max(0, d.full - dt * 0.35);
+
+          if (d.state === 'eat') {
+            d.timer -= dt;
+            if (d.timer <= 0) finishEating(d);
+          } else {
+            var dx = d.tx - d.x, dy = d.ty - d.y, dist = Math.hypot(dx, dy);
+            if (dist > 3) {
+              var step = Math.min(dist, d.speed * dt);
+              d.x += dx / dist * step;
+              d.y += dy / dist * step;
+              if (Math.abs(dx) > 4) d.dir = dx > 0 ? 1 : -1;
+              d.el.classList.add('walking');
+            } else {
+              d.el.classList.remove('walking');
+              if (d.state === 'run') {
+                if (d.food) {
+                  d.state = 'eat';
+                  d.timer = 1.8;
+                  d.dir = d.x < d.food.x ? 1 : -1;
+                  d.el.classList.add('eating');
+                } else {
+                  d.state = 'idle';
+                }
+              } else {
+                d.timer -= dt;
+                if (d.timer <= 0) {
+                  d.tx = rand(b.minX, b.maxX);
+                  d.ty = rand(b.minY, b.maxY);
+                  d.speed = rand(50, 100);
+                  d.timer = rand(1, 4);
+                }
+              }
+            }
+          }
+
+          d.x = Math.max(b.minX - 20, Math.min(b.maxX + 20, d.x));
+          d.y = Math.max(b.minY, Math.min(b.maxY, d.y));
+          var s = scaleAt(d.y);
+          d.el.style.transform = 'translate(' + (d.x - 65).toFixed(1) + 'px,' + (d.y - 92).toFixed(1) + 'px) scale(' + s.toFixed(3) + ')';
+          d.el.style.zIndex = Math.round(d.y);
+          if (d.lastDir !== d.dir) { d.flip.style.transform = 'scaleX(' + d.dir + ')'; d.lastDir = d.dir; }
+
+          var pct = Math.round(d.full);
+          d.bar.style.width = pct + '%';
+          d.bar.style.background = pct > 60 ? '#5bd05b' : pct > 30 ? '#f0c040' : '#f0574a';
+          d.el.classList.toggle('sleepy', pct < 12 && d.state === 'idle');
+        });
+
+        requestAnimationFrame(frame);
+      }
+
+      // eventos
+      yard.addEventListener('click', function (e) {
+        var r = yard.getBoundingClientRect();
+        dropFood(e.clientX - r.left, e.clientY - r.top);
+      });
+
+      foodBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          foodBtns.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+          btn.setAttribute('aria-pressed', 'true');
+          currentFood = { emoji: btn.dataset.food, value: Number(btn.dataset.value) };
+        });
+      });
+
+      document.getElementById('rain').addEventListener('click', function () {
+        var b = bounds();
+        var n = Math.min(6, 14 - foods.length);
+        if (n <= 0) { toast('¡Ya hay mucha comida en el parque!'); return; }
+        for (var i = 0; i < n; i++) {
+          (function (i) {
+            setTimeout(function () { dropFood(rand(b.minX, b.maxX), rand(b.minY, b.maxY)); }, i * 180);
+          })(i);
+        }
+      });
+
+      document.getElementById('add').addEventListener('click', function () {
+        if (dogs.length >= 14) { toast('¡El parque está lleno de perritos! 🐕'); return; }
+        var d = addDog();
+        say(d, '¡Hola! 👋', 1600);
+      });
+
+      // decoración: florecitas
+      for (var i = 0; i < 14; i++) {
+        var fl = document.createElement('div');
+        fl.className = 'flower';
+        fl.textContent = ['🌼', '🌸', '🌷'][i % 3];
+        fl.style.left = rand(2, 96) + '%';
+        fl.style.top = rand(48, 95) + '%';
+        fl.style.opacity = '.85';
+        yard.insertBefore(fl, toastEl);
+      }
+
+      for (var k = 0; k < 6; k++) addDog();
+      requestAnimationFrame(function (t) { last = t; frame(t); });
+    })();
+  </script>
 </body>
 </html>
